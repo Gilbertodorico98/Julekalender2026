@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import './App.css'
-import { ADVENT_CONTENT, DOOR_CONTENT, DOOR_ORDER } from './doors'
+import { ADVENT_CONTENT, DOOR_CONTENT, DOOR_ORDER, type DoorContent } from './doors'
 import { Door } from './Door'
+import { DoorDialog } from './DoorDialog'
 import {
   ADVENT_SUNDAYS,
   isDateReached,
@@ -15,6 +16,9 @@ import { ADVENT_STORAGE_KEY, DAY_STORAGE_KEY, useOpenedDoors } from './use-opene
 const dateOverride = import.meta.env.DEV ? parseDateOverride(window.location.search) : null
 
 const MONTH_NAMES: Record<number, string> = { 11: 'november', 12: 'december' }
+
+/** Varighed af lågens flip (se .door__front transition i App.css). */
+const FLIP_MS = 700
 
 function useNow(): Date {
   const [now, setNow] = useState(() => dateOverride ?? new Date())
@@ -43,6 +47,20 @@ export default function App() {
   const days = useOpenedDoors(DAY_STORAGE_KEY)
   const advent = useOpenedDoors(ADVENT_STORAGE_KEY)
   const [message, setMessage] = useState<string | null>(null)
+  const [shown, setShown] = useState<{ name: string; content: DoorContent } | null>(null)
+  const showTimer = useRef<number | undefined>(undefined)
+
+  useEffect(() => () => window.clearTimeout(showTimer.current), [])
+
+  const closeDialog = useCallback(() => setShown(null), [])
+
+  /** Viser indholdet i popup'en; efter et nyt åbn venter vi på flip-animationen. */
+  function show(name: string, content: DoorContent, afterFlip: boolean) {
+    window.clearTimeout(showTimer.current)
+    setMessage(null)
+    if (!afterFlip) return setShown({ name, content })
+    showTimer.current = window.setTimeout(() => setShown({ name, content }), FLIP_MS)
+  }
 
   const next = nextUnlock(now)
 
@@ -92,8 +110,9 @@ export default function App() {
                 isToday={isToday && unlocked < 24}
                 onOpen={() => {
                   advent.open(sunday.number)
-                  setMessage(null)
+                  show(label, ADVENT_CONTENT[sunday.number], true)
                 }}
+                onShow={() => show(label, ADVENT_CONTENT[sunday.number], false)}
                 onLocked={() => setMessage(`Tålmodighed! Gaven til ${label} åbner d. ${opensOn}.`)}
               />
             )
@@ -117,13 +136,16 @@ export default function App() {
               isToday={day === unlocked}
               onOpen={() => {
                 days.open(day)
-                setMessage(null)
+                show(`Låge ${day}`, DOOR_CONTENT[day], true)
               }}
+              onShow={() => show(`Låge ${day}`, DOOR_CONTENT[day], false)}
               onLocked={() => setMessage(`Tålmodighed! Låge ${day} åbner d. ${day}. december.`)}
             />
           )
         })}
       </section>
+
+      {shown && <DoorDialog name={shown.name} content={shown.content} onClose={closeDialog} />}
     </main>
   )
 }

@@ -13,6 +13,25 @@ async function press(page: Page, name: RegExp) {
   else await target.click()
 }
 
+/**
+ * WebKits mobil-emulering på Windows med skærmskalering (fx 125 %) giver forkert
+ * innerWidth/innerHeight og forskudte tryk-koordinater. Chromium-iPhone-projektet
+ * dækker så tryk og mål; her bruges tastaturet i stedet.
+ */
+async function isBrokenEmulation(page: Page) {
+  if (!test.info().project.use.isMobile) return false
+  return page.evaluate(() => window.innerWidth !== window.screen.width)
+}
+
+async function pressButton(page: Page, name: string) {
+  const target = page.getByRole('button', { name, exact: true })
+  if (!test.info().project.use.hasTouch) return target.click()
+  if (!(await isBrokenEmulation(page))) return target.tap()
+  test.info().annotations.push({ type: 'note', description: `"${name}" aktiveret med Enter pga. emulering` })
+  await target.focus()
+  await page.keyboard.press('Enter')
+}
+
 async function snap(page: Page, label: string) {
   const file = `tmp/screens/${test.info().project.name.replace(/\s+/g, '-')}-${label}.png`
   await page.screenshot({ path: file, fullPage: true })
@@ -82,8 +101,11 @@ test('1. advent åbner ved midnat dansk tid, alt andet er låst', async ({ page 
 
   await press(page, /^Åbn 1\. søndag i advent/)
   await expect(door(page, /^1\. søndag i advent: Gave/)).toBeVisible()
-  await page.waitForTimeout(1000) // lad flip-animationen køre færdig
+  const dialog = page.getByRole('dialog')
+  await expect(dialog).toContainText('Der ligger en gave til dig!')
   await snap(page, '29-nov-gave-aabnet')
+  await pressButton(page, 'Luk')
+  await expect(dialog).toHaveCount(0)
 })
 
 test('d. 5. dec: låge 1-5 kan åbnes, låge 6 ikke, og åbne låger huskes', async ({ page }) => {
@@ -96,12 +118,16 @@ test('d. 5. dec: låge 1-5 kan åbnes, låge 6 ikke, og åbne låger huskes', as
   await expect(door(page, /^Åbn Låge 5$/)).toHaveClass(/door--today/)
 
   await press(page, /^Åbn Låge 3$/)
+  const opened = door(page, /^Låge 3: Kalenderlys/)
+  await expect(opened).toBeVisible()
+  const dialog = page.getByRole('dialog')
+  await expect(dialog).toContainText('Husk at brænde lyset ned til 3-tallet i dag.')
+  await pressButton(page, 'Luk')
+  await expect(dialog).toHaveCount(0)
+
   await press(page, /^Låge 6 er låst/)
   await expect(door(page, /^Låge 6 er låst/)).not.toHaveClass(/door--open/)
-
-  const opened = door(page, /^Låge 3: Kalenderlys$/)
-  await expect(opened).toBeVisible()
-  await expect(opened.getByText('Husk at brænde lyset ned til 3-tallet i dag.')).toBeVisible()
+  await expect(dialog).toHaveCount(0)
 
   // Efter flippet skal forsiden være helt skjult. Ellers stak et spejlvendt tal ud i Safari.
   await expect(opened.locator('.door__front')).toBeHidden({ timeout: 3000 })
@@ -109,7 +135,55 @@ test('d. 5. dec: låge 1-5 kan åbnes, låge 6 ikke, og åbne låger huskes', as
   await snap(page, '5-dec-laage-3-aabnet')
 
   await page.reload()
-  await expect(door(page, /^Låge 3: Kalenderlys$/)).toBeVisible()
+  await expect(door(page, /^Låge 3: Kalenderlys/)).toBeVisible()
+})
+
+test('d. 10. dec: gaven vises i popup, kan lukkes og vises igen', async ({ page }) => {
+  await page.clock.install({ time: cph('2026-12-10T12:00:00') })
+  await page.goto('./')
+
+  await press(page, /^Åbn Låge 10$/)
+  const dialog = page.getByRole('dialog')
+  await expect(dialog).toContainText('Låge 10')
+  await expect(dialog).toContainText('10 minutters massage! Indløs den, når du har lyst.')
+  await expect(page.getByRole('button', { name: 'Luk' })).toBeFocused()
+
+  // Hele popup'en skal kunne ses på skærmen, også på iPhone SE (måles ikke i forstyrret emulering).
+  if (!(await isBrokenEmulation(page))) {
+    const fits = await dialog.evaluate((el) => {
+      const r = el.getBoundingClientRect()
+      return r.top >= 0 && r.bottom <= window.innerHeight && el.scrollHeight <= el.clientHeight + 1
+    })
+    expect(fits, 'popup passer på skærmen').toBe(true)
+  }
+  await snap(page, '10-dec-massage')
+
+  await pressButton(page, 'Luk')
+  await expect(dialog).toHaveCount(0)
+
+  // Tryk på den åbne låge viser gaven igen, og Escape lukker.
+  await press(page, /^Låge 10: Dagens gave/)
+  await expect(dialog).toContainText('10 minutters massage!')
+  await page.keyboard.press('Escape')
+  await expect(dialog).toHaveCount(0)
+})
+
+test('åbnede låger har intet afskåret indhold', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('julekalender2026-opened', JSON.stringify(Array.from({ length: 24 }, (_, i) => i + 1)))
+    localStorage.setItem('julekalender2026-advent-opened', '[1,2,3,4]')
+  })
+  await page.clock.install({ time: cph('2026-12-26T12:00:00') })
+  await page.goto('./')
+
+  await expect(page.locator('.door--open')).toHaveCount(28)
+  const clipped = await page.evaluate(() =>
+    [...document.querySelectorAll('.door__inside')]
+      .filter((el) => el.scrollHeight > el.clientHeight + 1 || el.scrollWidth > el.clientWidth + 1)
+      .map((el) => el.closest('.door')?.getAttribute('aria-label')),
+  )
+  expect(clipped, 'låger med afskåret indhold').toEqual([])
+  await snap(page, '26-dec-alle-aabne')
 })
 
 test('ved midnat låses næste låge op uden genindlæsning', async ({ page }) => {

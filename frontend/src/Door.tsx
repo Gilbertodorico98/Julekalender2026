@@ -14,6 +14,8 @@ type Props = {
   isToday: boolean
   variant?: 'day' | 'gift'
   onOpen: () => void
+  /** Tryk på en allerede åbnet låge: vis indholdet igen. */
+  onShow: () => void
   onLocked: () => void
 }
 
@@ -27,12 +29,16 @@ export function Door({
   isToday,
   variant = 'day',
   onOpen,
+  onShow,
   onLocked,
 }: Props) {
   const [shaking, setShaking] = useState(false)
 
   function handleClick() {
-    if (isOpen) return
+    if (isOpen) {
+      onShow()
+      return
+    }
     if (isUnlocked) {
       onOpen()
       return
@@ -62,7 +68,7 @@ export function Door({
       }}
       aria-label={
         isOpen
-          ? `${name}: ${content.title}`
+          ? `${name}: ${content.title}. Vis igen`
           : isUnlocked
             ? `Åbn ${name}`
             : `${name} er låst indtil ${opensOn}`
@@ -73,7 +79,7 @@ export function Door({
           <>
             <span className="door__emoji">{content.emoji}</span>
             <strong className="door__title">{content.title}</strong>
-            <span className="door__text">{content.text}</span>
+            {/* Hele teksten vises i popup'en; lågen er for lille på mobil */}
           </>
         )}
       </span>
