@@ -11,7 +11,7 @@ export const DOOR_CONTENT: Record<number, DoorContent> = {
   7: { emoji: '🎁', title: 'Gaveliste', text: 'I dag er en god dag til at skrive ønskesedlen færdig.' },
   8: { emoji: '☕', title: 'Gløgg', text: 'Gløgg har rødder i middelalderens krydrede vine.' },
   9: { emoji: '⭐', title: 'Stjernen', text: 'Stjernen i toppen af træet symboliserer Betlehemsstjernen.' },
-  10: { emoji: '🎅', title: 'Julemanden', text: 'Han bor i Grønland. Det ved alle danskere.' },
+  10: { emoji: '💆', title: 'Dagens gave', text: '10 minutters massage! Indløs den, når du har lyst.' },
   11: { emoji: '🍊', title: 'Klementiner', text: 'Ét stykke frugt om dagen holder nissen væk. Næsten.' },
   12: { emoji: '🔔', title: 'Klokker', text: 'Halvvejs! Tolv låger åbnet, tolv tilbage.' },
   13: { emoji: '👑', title: 'Lucia', text: 'Luciadag fejres med lys i håret og lussekatte.' },
