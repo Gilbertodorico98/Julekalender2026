@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { PASSWORD_HASH } from '../src/password'
 
 /** Et tidspunkt i dansk vintertid (UTC+1), fx cph('2026-12-05T12:00:00'). */
 const cph = (local: string) => new Date(`${local}+01:00`)
@@ -17,9 +18,18 @@ async function snap(page: Page, label: string) {
   await page.screenshot({ path: file, fullPage: true })
 }
 
+// Adgangsnøglen er hashen, ikke kodeordet, så den må gerne stå her.
+const ACCESS_KEY = 'julekalender2026-access'
+const ACCESS_VALUE = PASSWORD_HASH
+const GATE_SUITE = 'kodeord'
+
 let errors: string[]
 
 test.beforeEach(async ({ page }) => {
+  // Kalendertestene springer kodeordet over. Kodeord-testene logger selv ind.
+  if (!test.info().titlePath.includes(GATE_SUITE)) {
+    await page.addInitScript(([k, v]) => localStorage.setItem(k, v), [ACCESS_KEY, ACCESS_VALUE])
+  }
   errors = []
   page.on('pageerror', (e) => errors.push(e.message))
   page.on('console', (m) => {
@@ -129,5 +139,67 @@ test.describe('bruger i en anden tidszone', () => {
 
     await expect(door(page, /^Åbn Låge 5$/)).toBeVisible()
     await expect(door(page, /^Låge 6 er låst/)).toBeVisible()
+  })
+})
+
+// Det rigtige kodeord står ikke i repoet: CALENDAR_PASSWORD=... npm run e2e
+const PASSWORD = process.env.CALENDAR_PASSWORD
+
+test.describe(GATE_SUITE, () => {
+  async function submit(page: Page) {
+    const button = page.getByRole('button', { name: 'Lås op' })
+    if (!test.info().project.use.hasTouch) return button.click()
+    // WebKits mobil-emulering på Windows med skærmskalering (125 %) forskyder tryk-koordinaterne,
+    // så tryk på knappen rammer ved siden af. Der sendes så med tastaturets "Gå"/Enter,
+    // som også er en rigtig måde at logge ind på iPhone. Chromium-iPhone tester knap-trykket.
+    const broken = await page.evaluate(() => window.innerWidth !== window.screen.width)
+    if (!broken) return button.tap()
+    test.info().annotations.push({ type: 'note', description: 'sendt med Enter pga. emulering' })
+    await page.getByLabel('Skriv kodeordet for at åbne kalenderen').press('Enter')
+  }
+
+  test('kalenderen er skjult før login, og forkert kodeord afvises', async ({ page }) => {
+    await page.clock.install({ time: cph('2026-12-05T12:00:00') })
+    await page.goto('./')
+
+    const field = page.getByLabel('Skriv kodeordet for at åbne kalenderen')
+    await expect(field).toBeVisible()
+    await expect(page.locator('.door')).toHaveCount(0)
+    await snap(page, 'kodeord')
+
+    await field.fill('forkert')
+    await submit(page)
+    await expect(page.getByRole('alert')).toHaveText('Forkert kodeord. Prøv igen.')
+    await expect(page.locator('.door')).toHaveCount(0)
+    await expect(field).toHaveValue('')
+
+    // Feltet må ikke være mindre end 16px, ellers zoomer iPhone ind.
+    const fontSize = await field.evaluate((el) => parseFloat(getComputedStyle(el).fontSize))
+    expect(fontSize).toBeGreaterThanOrEqual(16)
+  })
+
+  test('rigtigt kodeord åbner kalenderen og huskes', async ({ page }) => {
+    test.skip(!PASSWORD, 'sæt CALENDAR_PASSWORD for at teste det rigtige kodeord')
+    await page.clock.install({ time: cph('2026-12-05T12:00:00') })
+    await page.goto('./')
+
+    const field = page.getByLabel('Skriv kodeordet for at åbne kalenderen')
+    // Skriv som på et tastatur, med stort forbogstav ligesom iPhone gør automatisk.
+    await field.pressSequentially(PASSWORD!.charAt(0).toUpperCase() + PASSWORD!.slice(1))
+    await submit(page)
+
+    await expect(door(page, /^Åbn Låge 5$/)).toBeVisible()
+    await page.reload()
+    await expect(door(page, /^Åbn Låge 5$/)).toBeVisible()
+    await expect(page.getByLabel('Skriv kodeordet for at åbne kalenderen')).toHaveCount(0)
+  })
+
+  test('Enter i feltet låser op', async ({ page }) => {
+    test.skip(!PASSWORD, 'sæt CALENDAR_PASSWORD for at teste det rigtige kodeord')
+    await page.goto('./')
+    const field = page.getByLabel('Skriv kodeordet for at åbne kalenderen')
+    await field.fill(PASSWORD!)
+    await field.press('Enter')
+    await expect(page.getByRole('heading', { name: 'Adventsgaver' })).toBeVisible()
   })
 })

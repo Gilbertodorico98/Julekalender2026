@@ -287,7 +287,104 @@
   40%, 80% { transform: translateX(6px); }
 }
 
+/* --- Kodeord-skærm --- */
+
+.gate {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 24px 16px;
+}
+
+.gate__box {
+  position: relative;
+  width: 100%;
+  max-width: 360px;
+  padding: 28px 24px;
+  border: 2px solid var(--gold);
+  border-radius: 14px;
+  background: rgba(27, 38, 59, 0.92);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  text-align: center;
+}
+
+.gate__icon {
+  font-size: 2.6rem;
+  line-height: 1;
+}
+
+.gate__box h1 {
+  margin: 8px 0 16px;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.8rem;
+  color: var(--gold);
+}
+
+.gate__box label {
+  display: block;
+  margin-bottom: 10px;
+}
+
+.gate__input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 2px solid var(--gold);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px; /* under 16px zoomer Safari på iPhone ind, når feltet får fokus */
+  text-align: center;
+}
+
+.gate__input:focus {
+  outline: 3px solid rgba(242, 193, 78, 0.6);
+  outline-offset: 2px;
+}
+
+.gate__input--shake {
+  animation: shake 0.4s ease-in-out;
+}
+
+.gate__error {
+  min-height: 1.4em;
+  margin: 8px 0;
+  color: #ff8a8a;
+  font-weight: 600;
+}
+
+.gate__button {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  background: var(--red);
+  color: var(--snow);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.gate__button:disabled {
+  opacity: 0.7;
+}
+
+@media (hover: hover) {
+  .gate__button:hover {
+    background: var(--red-dark);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .gate__input--shake {
+    animation: none;
+  }
+
   .snow,
   .door--today .door__front,
   .door--shake {
