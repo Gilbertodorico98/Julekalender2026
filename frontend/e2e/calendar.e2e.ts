@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { PASSWORD_HASH } from '../src/password'
+import { MASTER_HASH, PASSWORD_HASH } from '../src/password'
 
 /** Et tidspunkt i dansk vintertid (UTC+1), fx cph('2026-12-05T12:00:00'). */
 const cph = (local: string) => new Date(`${local}+01:00`)
@@ -266,6 +266,9 @@ test.describe(GATE_SUITE, () => {
     await page.reload()
     await expect(door(page, /^Åbn Låge 5$/)).toBeVisible()
     await expect(page.getByLabel('Skriv kodeordet for at åbne kalenderen')).toHaveCount(0)
+    // Familiens kodeord giver ikke master-adgang.
+    await expect(page.getByRole('region', { name: 'Master-visning' })).toHaveCount(0)
+    await expect(door(page, /^Låge 6 er låst/)).toBeVisible()
   })
 
   test('Enter i feltet låser op', async ({ page }) => {
@@ -275,5 +278,78 @@ test.describe(GATE_SUITE, () => {
     await field.fill(PASSWORD!)
     await field.press('Enter')
     await expect(page.getByRole('heading', { name: 'Adventsgaver' })).toBeVisible()
+  })
+
+  test('master-kodeord giver master-visning', async ({ page }) => {
+    test.skip(!MASTER_PASSWORD, 'sæt CALENDAR_MASTER_PASSWORD for at teste master-kodeordet')
+    await page.clock.install({ time: cph('2026-11-27T12:00:00') })
+    await page.goto('./')
+    const field = page.getByLabel('Skriv kodeordet for at åbne kalenderen')
+    await field.pressSequentially(MASTER_PASSWORD!)
+    await submit(page)
+    await expect(page.getByRole('region', { name: 'Master-visning' })).toBeVisible()
+    await expect(door(page, /er låst indtil/)).toHaveCount(0)
+  })
+})
+
+// Master-kodeordet står heller ikke i repoet: CALENDAR_MASTER_PASSWORD=... npm run e2e
+const MASTER_PASSWORD = process.env.CALENDAR_MASTER_PASSWORD
+
+test.describe('master-visning', () => {
+  test.beforeEach(async ({ page }) => {
+    // Log ind som master én gang (ikke igen efter "Afslut master" + genindlæsning).
+    await page.addInitScript((hash) => {
+      if (sessionStorage.getItem('e2e-master-seeded')) return
+      localStorage.setItem('julekalender2026-master', hash)
+      sessionStorage.setItem('e2e-master-seeded', '1')
+    }, MASTER_HASH)
+    await page.clock.install({ time: cph('2026-11-27T12:00:00') })
+  })
+
+  test('alle låger kan åbnes nu uden at røre familiens låger', async ({ page }) => {
+    await page.goto('./')
+    await expect(page.getByRole('region', { name: 'Master-visning' })).toBeVisible()
+    await expect(door(page, /er låst indtil/)).toHaveCount(0)
+    await expect(door(page, /^Åbn /)).toHaveCount(28)
+    await snap(page, 'master')
+
+    await press(page, /^Åbn Låge 10$/)
+    await expect(page.getByRole('dialog')).toContainText('10 minutters massage!')
+    await pressButton(page, 'Luk')
+
+    const stored = await page.evaluate(() => ({
+      family: localStorage.getItem('julekalender2026-opened'),
+      master: localStorage.getItem('julekalender2026-opened-master'),
+    }))
+    expect(stored.family, 'familiens låger er urørte').toBeNull()
+    expect(stored.master).toBe('[10]')
+  })
+
+  test('"Vis som dato" viser låsningen på en bestemt dag', async ({ page }) => {
+    await page.goto('./')
+    await page.getByLabel('Vis som dato').selectOption('2026-12-05')
+    await expect(door(page, /^Åbn Låge 5$/)).toBeVisible()
+    await expect(door(page, /^Låge 6 er låst/)).toBeVisible()
+    await expect(door(page, /^3\. søndag i advent er låst/)).toBeVisible()
+
+    await page.getByLabel('Vis som dato').selectOption('2026-11-29')
+    await expect(door(page, /^Åbn 1\. søndag i advent$/)).toBeVisible()
+    await expect(door(page, /^Låge \d+ er låst/)).toHaveCount(24)
+  })
+
+  test('"Luk alle låger igen" og "Afslut master"', async ({ page }) => {
+    await page.goto('./')
+    await press(page, /^Åbn Låge 3$/)
+    await pressButton(page, 'Luk')
+    await expect(door(page, /^Låge 3: Kalenderlys/)).toBeVisible()
+
+    await pressButton(page, 'Luk alle låger igen')
+    await expect(door(page, /^Åbn Låge 3$/)).toBeVisible()
+
+    await pressButton(page, 'Afslut master')
+    await expect(page.getByRole('heading', { name: 'Adventsgaver' })).toBeVisible()
+    await expect(page.getByRole('region', { name: 'Master-visning' })).toHaveCount(0)
+    // Tilbage i almindelig visning d. 27. nov: alt er låst, og man er stadig logget ind.
+    await expect(door(page, /er låst indtil/)).toHaveCount(28)
   })
 })

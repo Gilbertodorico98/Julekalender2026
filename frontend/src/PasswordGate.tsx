@@ -1,25 +1,25 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
-import { checkPassword, hasStoredAccess, storeAccess } from './password'
+import { checkPassword, getStoredRole, storeRole, type Role } from './password'
 
-/** Viser kalenderen først, når det rigtige kodeord er skrevet (huskes på enheden). */
-export function PasswordGate({ children }: { children: ReactNode }) {
-  const [unlocked, setUnlocked] = useState(hasStoredAccess)
+/** Viser kalenderen først, når et rigtigt kodeord er skrevet (huskes på enheden). */
+export function PasswordGate({ children }: { children: (role: Role) => ReactNode }) {
+  const [role, setRole] = useState<Role | null>(getStoredRole)
   const [value, setValue] = useState('')
   const [error, setError] = useState(false)
   const [shaking, setShaking] = useState(false)
   const [checking, setChecking] = useState(false)
 
-  if (unlocked) return <>{children}</>
+  if (role) return <>{children(role)}</>
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     if (checking) return
     setChecking(true)
-    const ok = await checkPassword(value)
+    const result = await checkPassword(value)
     setChecking(false)
-    if (ok) {
-      storeAccess()
-      setUnlocked(true)
+    if (result) {
+      storeRole(result)
+      setRole(result)
       return
     }
     setError(true)

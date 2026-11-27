@@ -11,6 +11,7 @@ import {
   unlockedDoorCount,
 } from './calendar-logic'
 import { ADVENT_STORAGE_KEY, DAY_STORAGE_KEY, useOpenedDoors } from './use-opened-doors'
+import { leaveMaster } from './password'
 
 // Kun i udvikling: ?dato=2026-12-05 lader som om det er den dag. Fjernes i produktionsbuild.
 const dateOverride = import.meta.env.DEV ? parseDateOverride(window.location.search) : null
@@ -41,11 +42,30 @@ function formatCountdown(ms: number): string {
   return `${days} ${dayWord}, ${hours} ${hourWord}, ${minutes} min. og ${seconds} sek.`
 }
 
-export default function App() {
-  const now = useNow()
+/** Valgmuligheder i master-visningens "Vis som dato". */
+const MASTER_VIEW_OPTIONS = [
+  { value: 'all', label: 'Alt låst op' },
+  { value: '2026-11-28', label: '28. nov' },
+  { value: '2026-11-29', label: '29. nov (1. advent)' },
+  ...Array.from({ length: 24 }, (_, i) => ({
+    value: `2026-12-${String(i + 1).padStart(2, '0')}`,
+    label: `${i + 1}. dec`,
+  })),
+]
+
+/** "Alt låst op" = 2. juledag, hvor alle låger og adventsgaver er nået. */
+function masterViewDate(value: string): Date {
+  return new Date(`${value === 'all' ? '2026-12-26' : value}T12:00:00+01:00`)
+}
+
+export default function App({ master = false }: { master?: boolean }) {
+  const realNow = useNow()
+  const [viewValue, setViewValue] = useState('all')
+  const now = master ? masterViewDate(viewValue) : realNow
   const unlocked = unlockedDoorCount(now)
-  const days = useOpenedDoors(DAY_STORAGE_KEY)
-  const advent = useOpenedDoors(ADVENT_STORAGE_KEY)
+  // Master-visningen gemmer sine åbnede låger for sig, så de rigtige låger ikke er åbnet i forvejen.
+  const days = useOpenedDoors(master ? `${DAY_STORAGE_KEY}-master` : DAY_STORAGE_KEY)
+  const advent = useOpenedDoors(master ? `${ADVENT_STORAGE_KEY}-master` : ADVENT_STORAGE_KEY)
   const [message, setMessage] = useState<string | null>(null)
   const [shown, setShown] = useState<{ name: string; content: DoorContent } | null>(null)
   const showTimer = useRef<number | undefined>(undefined)
@@ -67,6 +87,46 @@ export default function App() {
   return (
     <main className="calendar">
       <div className="snow" aria-hidden="true" />
+      {master && (
+        <section className="master" aria-label="Master-visning">
+          <p className="master__title">
+            <strong>Master-visning</strong> – familien ser kun lågerne på deres dag
+          </p>
+          <div className="master__controls">
+            <label className="master__field">
+              Vis som dato
+              <select value={viewValue} onChange={(e) => setViewValue(e.target.value)}>
+                {MASTER_VIEW_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="button"
+              className="master__button"
+              onClick={() => {
+                days.reset()
+                advent.reset()
+                setShown(null)
+              }}
+            >
+              Luk alle låger igen
+            </button>
+            <button
+              type="button"
+              className="master__button master__button--exit"
+              onClick={() => {
+                leaveMaster()
+                window.location.reload()
+              }}
+            >
+              Afslut master
+            </button>
+          </div>
+        </section>
+      )}
       <header className="calendar__header">
         <h1>Julekalender 2026</h1>
         {next ? (

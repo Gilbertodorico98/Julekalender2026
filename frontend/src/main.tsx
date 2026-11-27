@@ -6,8 +6,6 @@ import { PasswordGate } from './PasswordGate.tsx'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <PasswordGate>
-      <App />
-    </PasswordGate>
+    <PasswordGate>{(role) => <App master={role === 'master'} />}</PasswordGate>
   </StrictMode>,
 )

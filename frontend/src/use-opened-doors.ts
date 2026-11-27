@@ -37,5 +37,12 @@ export function useOpenedDoors(storageKey: string) {
     [storageKey],
   )
 
-  return { opened, open }
+  /** Lukker alle låger igen (bruges i master-visningen). */
+  const reset = useCallback(() => {
+    const empty = new Set<number>()
+    save(storageKey, empty)
+    setOpened(empty)
+  }, [storageKey])
+
+  return { opened, open, reset }
 }
