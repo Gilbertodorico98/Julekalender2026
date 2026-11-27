@@ -1,0 +1,31 @@
+:root {
+  --night: #0d1b2a;
+  --night-2: #1b263b;
+  --red: #b3001b;
+  --red-dark: #7a0012;
+  --green: #1f6f43;
+  --gold: #f2c14e;
+  --snow: #f8f9fa;
+  --paper: #fffaf0;
+  --ink: #2b2118;
+
+  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  color: var(--snow);
+  background: radial-gradient(ellipse at top, var(--night-2), var(--night) 70%);
+  min-height: 100%;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+body {
+  background: transparent;
+}
