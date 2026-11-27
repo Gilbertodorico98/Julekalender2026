@@ -28,6 +28,14 @@ export const DOOR_CONTENT: Record<number, DoorContent> = {
   24: { emoji: '❤️', title: 'Glædelig jul!', text: 'Rigtig glædelig jul og godt nytår 2027!' },
 }
 
+/** Adventsgaverne (fysiske gaver), nøglet efter søndag 1-4. Ret teksterne frit. */
+export const ADVENT_CONTENT: Record<number, DoorContent> = {
+  1: { emoji: '🎁', title: 'Gave til 1. advent', text: 'Der ligger en gave til dig! Kig under juletræet.' },
+  2: { emoji: '🎁', title: 'Gave til 2. advent', text: 'Der ligger en gave til dig! Kig i skabet i entréen.' },
+  3: { emoji: '🎁', title: 'Gave til 3. advent', text: 'Der ligger en gave til dig! Kig under din hovedpude.' },
+  4: { emoji: '🎁', title: 'Gave til 4. advent', text: 'Den sidste adventsgave! Kig bag sofaen.' },
+}
+
 /** Fast, blandet rækkefølge af lågerne i gitteret. */
 export const DOOR_ORDER = [
   7, 15, 2, 21, 11, 4, 18, 9, 24, 13, 1, 20, 6, 16, 23, 3, 10, 19, 14, 5, 22, 8, 17, 12,

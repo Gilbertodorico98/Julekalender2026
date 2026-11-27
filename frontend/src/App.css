@@ -61,6 +61,71 @@
   font-weight: 600;
 }
 
+/* --- Adventsgaver --- */
+
+.calendar__advent {
+  position: relative;
+  margin-bottom: 28px;
+}
+
+.calendar__advent h2 {
+  margin: 0 0 12px;
+  text-align: center;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.5rem;
+  color: var(--gold);
+}
+
+.calendar__advent-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+@media (max-width: 600px) {
+  .calendar__advent-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+}
+
+.door--gift {
+  aspect-ratio: 4 / 3;
+}
+
+/* Gaveæske: guldpapir med et rødt bånd på kryds */
+.door--gift .door__front,
+.door--gift:nth-child(n) .door__front {
+  background:
+    linear-gradient(90deg, transparent calc(50% - 9px), var(--red) calc(50% - 9px), var(--red) calc(50% + 9px), transparent calc(50% + 9px)),
+    linear-gradient(0deg, transparent calc(50% - 9px), var(--red) calc(50% - 9px), var(--red) calc(50% + 9px), transparent calc(50% + 9px)),
+    linear-gradient(135deg, #f7d87a, var(--gold) 45%, #c9962a);
+}
+
+.door--gift .door__number {
+  max-width: 85%;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(13, 27, 42, 0.75);
+  font-size: clamp(0.85rem, 3vw, 1.15rem);
+  line-height: 1.2;
+  text-align: center;
+}
+
+.door__bow {
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: clamp(1.2rem, 4vw, 1.8rem);
+}
+
+.door--gift .door__inside {
+  box-shadow: inset 0 0 0 3px var(--red);
+}
+
+/* --- 24 låger --- */
+
 .calendar__grid {
   position: relative;
   display: grid;

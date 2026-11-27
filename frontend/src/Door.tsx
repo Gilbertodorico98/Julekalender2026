@@ -2,30 +2,45 @@ import { useState } from 'react'
 import type { DoorContent } from './doors'
 
 type Props = {
-  day: number
+  /** Tekst på lågens forside, fx "7" eller "1. søndag i advent". */
+  label: string
+  /** Hvornår lågen åbner, fx "7. december". Bruges i besked og skærmlæser. */
+  opensOn: string
   content: DoorContent
   isOpen: boolean
   isUnlocked: boolean
   isToday: boolean
-  onOpen: (day: number) => void
-  onLocked: (day: number) => void
+  variant?: 'day' | 'gift'
+  onOpen: () => void
+  onLocked: () => void
 }
 
-export function Door({ day, content, isOpen, isUnlocked, isToday, onOpen, onLocked }: Props) {
+export function Door({
+  label,
+  opensOn,
+  content,
+  isOpen,
+  isUnlocked,
+  isToday,
+  variant = 'day',
+  onOpen,
+  onLocked,
+}: Props) {
   const [shaking, setShaking] = useState(false)
 
   function handleClick() {
     if (isOpen) return
     if (isUnlocked) {
-      onOpen(day)
+      onOpen()
       return
     }
-    onLocked(day)
+    onLocked()
     setShaking(true)
   }
 
   const classes = [
     'door',
+    variant === 'gift' && 'door--gift',
     isOpen && 'door--open',
     !isUnlocked && 'door--locked',
     isToday && !isOpen && 'door--today',
@@ -39,13 +54,15 @@ export function Door({ day, content, isOpen, isUnlocked, isToday, onOpen, onLock
       type="button"
       className={classes}
       onClick={handleClick}
-      onAnimationEnd={() => setShaking(false)}
+      onAnimationEnd={(e) => {
+        if (e.animationName === 'shake') setShaking(false)
+      }}
       aria-label={
         isOpen
-          ? `Låge ${day}: ${content.title}`
+          ? `${label}: ${content.title}`
           : isUnlocked
-            ? `Åbn låge ${day}`
-            : `Låge ${day} er låst indtil ${day}. december`
+            ? `Åbn ${label}`
+            : `${label} er låst indtil ${opensOn}`
       }
     >
       <span className="door__inside" aria-hidden={!isOpen}>
@@ -58,7 +75,8 @@ export function Door({ day, content, isOpen, isUnlocked, isToday, onOpen, onLock
         )}
       </span>
       <span className="door__front" aria-hidden="true">
-        <span className="door__number">{day}</span>
+        {variant === 'gift' && <span className="door__bow">🎀</span>}
+        <span className="door__number">{label}</span>
         {!isUnlocked && <span className="door__lock">🔒</span>}
       </span>
     </button>

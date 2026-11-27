@@ -33,6 +33,37 @@ export function isDoorUnlocked(door: number, now: Date): boolean {
   return door >= 1 && door <= unlockedDoorCount(now)
 }
 
+/** De fire søndage i advent 2026 (1. advent ligger før 1. december). */
+export const ADVENT_SUNDAYS = [
+  { number: 1, month: 11, day: 29 },
+  { number: 2, month: 12, day: 6 },
+  { number: 3, month: 12, day: 13 },
+  { number: 4, month: 12, day: 20 },
+] as const
+
+/** Er datoen (måned/dag i 2026) nået i dansk tid? */
+export function isDateReached(month: number, day: number, now: Date): boolean {
+  const d = getCopenhagenDate(now)
+  if (d.year !== CALENDAR_YEAR) return d.year > CALENDAR_YEAR
+  if (d.month !== month) return d.month > month
+  return d.day >= day
+}
+
+/** Kl. 00:00 dansk tid på en dato i nov/dec 2026 (vintertid, UTC+1). */
+function copenhagenMidnight(month: number, day: number): Date {
+  return new Date(Date.UTC(CALENDAR_YEAR, month - 1, day, 0, 0, 0) - 60 * 60 * 1000)
+}
+
+/** Næste åbning før kalenderen er i gang, til nedtællingen. `null` fra 1. december. */
+export function nextUnlock(now: Date): { label: string; at: Date } | null {
+  const first = ADVENT_SUNDAYS[0]
+  const events = [
+    { label: '1. søndag i advent', at: copenhagenMidnight(first.month, first.day) },
+    { label: 'Første låge', at: CALENDAR_START },
+  ]
+  return events.find((e) => e.at.getTime() > now.getTime()) ?? null
+}
+
 export function msUntilStart(now: Date): number {
   return Math.max(0, CALENDAR_START.getTime() - now.getTime())
 }

@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
+  ADVENT_SUNDAYS,
+  isDateReached,
   isDoorUnlocked,
+  nextUnlock,
   msUntilStart,
   parseDateOverride,
   unlockedDoorCount,
@@ -54,6 +57,48 @@ describe('msUntilStart', () => {
   it('tæller ned til 1. dec og stopper på 0', () => {
     expect(msUntilStart(utc('2026-11-30T22:00:00Z'))).toBe(60 * 60 * 1000)
     expect(msUntilStart(utc('2026-12-02T00:00:00Z'))).toBe(0)
+  })
+})
+
+describe('advent', () => {
+  it('1. advent åbner ved midnat dansk tid d. 29. november', () => {
+    expect(isDateReached(11, 29, utc('2026-11-28T22:59:00Z'))).toBe(false)
+    expect(isDateReached(11, 29, utc('2026-11-28T23:00:00Z'))).toBe(true)
+  })
+
+  it('3. advent er låst d. 12. dec og åben d. 13. dec', () => {
+    expect(isDateReached(12, 13, utc('2026-12-12T12:00:00Z'))).toBe(false)
+    expect(isDateReached(12, 13, utc('2026-12-13T12:00:00Z'))).toBe(true)
+  })
+
+  it('november-datoer er nået i december, og alt er nået i 2027', () => {
+    expect(isDateReached(11, 29, utc('2026-12-02T12:00:00Z'))).toBe(true)
+    expect(isDateReached(12, 20, utc('2027-01-02T12:00:00Z'))).toBe(true)
+    expect(isDateReached(11, 29, utc('2025-12-30T12:00:00Z'))).toBe(false)
+  })
+
+  it('adventssøndagene er søndage', () => {
+    for (const s of ADVENT_SUNDAYS) {
+      expect(new Date(Date.UTC(2026, s.month - 1, s.day)).getUTCDay()).toBe(0)
+    }
+  })
+})
+
+describe('nextUnlock', () => {
+  it('peger på 1. advent før d. 29. november', () => {
+    const next = nextUnlock(utc('2026-11-27T12:00:00Z'))
+    expect(next?.label).toBe('1. søndag i advent')
+    expect(next?.at.toISOString()).toBe('2026-11-28T23:00:00.000Z')
+  })
+
+  it('peger på første låge efter 1. advent', () => {
+    const next = nextUnlock(utc('2026-11-29T12:00:00Z'))
+    expect(next?.label).toBe('Første låge')
+    expect(next?.at.toISOString()).toBe('2026-11-30T23:00:00.000Z')
+  })
+
+  it('er null når kalenderen er i gang', () => {
+    expect(nextUnlock(utc('2026-12-01T12:00:00Z'))).toBeNull()
   })
 })
 
