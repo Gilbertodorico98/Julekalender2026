@@ -76,7 +76,7 @@ export default function App() {
             const label = `${sunday.number}. søndag i advent`
             const opensOn = `${sunday.day}. ${MONTH_NAMES[sunday.month]}`
             const isUnlocked = isDateReached(sunday.month, sunday.day, now)
-            const following = ADVENT_SUNDAYS.at(i + 1) // næste søndag, hvis nogen
+            const following = ADVENT_SUNDAYS[i + 1] as (typeof ADVENT_SUNDAYS)[number] | undefined // næste søndag, hvis nogen (ikke .at(): kræver iOS 15.4)
             const isToday =
               isUnlocked && !(following && isDateReached(following.month, following.day, now))
             return (
@@ -84,6 +84,7 @@ export default function App() {
                 key={sunday.number}
                 variant="gift"
                 label={label}
+                name={label}
                 opensOn={opensOn}
                 content={ADVENT_CONTENT[sunday.number]}
                 isUnlocked={isUnlocked}
@@ -107,6 +108,7 @@ export default function App() {
             <Door
               key={day}
               label={String(day)}
+              name={`Låge ${day}`}
               opensOn={`${day}. december`}
               content={DOOR_CONTENT[day]}
               isUnlocked={isUnlocked}

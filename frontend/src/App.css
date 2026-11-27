@@ -149,9 +149,12 @@
   border: none;
   background: none;
   cursor: pointer;
+  -webkit-perspective: 900px;
   perspective: 900px;
   font: inherit;
   color: inherit;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation; /* ingen dobbelttryk-zoom-forsinkelse på iPhone */
 }
 
 .door:focus-visible {
@@ -206,6 +209,7 @@
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.4);
   transform-origin: left center;
   transition: transform 0.8s cubic-bezier(0.3, 0.7, 0.3, 1), box-shadow 0.2s;
+  -webkit-backface-visibility: hidden; /* iOS < 15.4 */
   backface-visibility: hidden;
 }
 
@@ -228,18 +232,32 @@
   opacity: 0.8;
 }
 
-.door:not(.door--locked):not(.door--open):hover .door__front {
-  transform: rotateY(-12deg);
+/* Kun med rigtig mus: på touch "hænger" :hover fast efter et tryk */
+@media (hover: hover) {
+  .door:not(.door--locked):not(.door--open):hover .door__front {
+    transform: rotateY(-12deg);
+  }
 }
 
 .door--open {
   cursor: default;
 }
 
+/* Safari skjuler ikke altid bagsiden af forsidens indhold (spejlvendt tal stikker ud).
+   Derfor skjules forsiden helt, når flip-animationen er færdig. */
+.door__front > * {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
 .door--open .door__front {
   transform: rotateY(-105deg);
   box-shadow: none;
   pointer-events: none;
+  visibility: hidden;
+  transition:
+    transform 0.8s cubic-bezier(0.3, 0.7, 0.3, 1),
+    visibility 0s linear 0.8s;
 }
 
 .door--locked {

@@ -14,6 +14,9 @@
   background: radial-gradient(ellipse at top, var(--night-2), var(--night) 70%);
   min-height: 100%;
   -webkit-font-smoothing: antialiased;
+  /* iOS: forstør ikke teksten automatisk når telefonen vendes på langs */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 * {

@@ -4,6 +4,8 @@ import type { DoorContent } from './doors'
 type Props = {
   /** Tekst på lågens forside, fx "7" eller "1. søndag i advent". */
   label: string
+  /** Navn til skærmlæser, fx "Låge 7" eller "1. søndag i advent". */
+  name: string
   /** Hvornår lågen åbner, fx "7. december". Bruges i besked og skærmlæser. */
   opensOn: string
   content: DoorContent
@@ -17,6 +19,7 @@ type Props = {
 
 export function Door({
   label,
+  name,
   opensOn,
   content,
   isOpen,
@@ -59,10 +62,10 @@ export function Door({
       }}
       aria-label={
         isOpen
-          ? `${label}: ${content.title}`
+          ? `${name}: ${content.title}`
           : isUnlocked
-            ? `Åbn ${label}`
-            : `${label} er låst indtil ${opensOn}`
+            ? `Åbn ${name}`
+            : `${name} er låst indtil ${opensOn}`
       }
     >
       <span className="door__inside" aria-hidden={!isOpen}>
