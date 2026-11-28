@@ -3,6 +3,7 @@ import './App.css'
 import { ADVENT_CONTENT, DOOR_CONTENT, DOOR_ORDER, type DoorContent } from './doors'
 import { Door } from './Door'
 import { DoorDialog } from './DoorDialog'
+import { Aurora, SelbuStar, WinterScene } from './Decorations'
 import {
   ADVENT_SUNDAYS,
   isDateReached,
@@ -86,6 +87,9 @@ export default function App({ master = false }: { master?: boolean }) {
 
   return (
     <main className="calendar">
+      <Aurora />
+      <WinterScene />
+      <div className="snow snow--far" aria-hidden="true" />
       <div className="snow" aria-hidden="true" />
       {master && (
         <section className="master" aria-label="Master-visning">
@@ -128,7 +132,13 @@ export default function App({ master = false }: { master?: boolean }) {
         </section>
       )}
       <header className="calendar__header">
+        <div className="calendar__stars" aria-hidden="true">
+          <SelbuStar />
+          <SelbuStar />
+          <SelbuStar />
+        </div>
         <h1>Julekalender 2026</h1>
+        <div className="knit-band" aria-hidden="true" />
         {next ? (
           <p className="calendar__status">
             {next.label} åbner om <strong>{formatCountdown(next.at.getTime() - now.getTime())}</strong>

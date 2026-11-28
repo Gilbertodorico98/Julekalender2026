@@ -1,5 +1,6 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { checkPassword, getStoredRole, storeRole, type Role } from './password'
+import { Aurora, SelbuStar, WinterScene } from './Decorations'
 
 /** Viser kalenderen først, når et rigtigt kodeord er skrevet (huskes på enheden). */
 export function PasswordGate({ children }: { children: (role: Role) => ReactNode }) {
@@ -29,9 +30,12 @@ export function PasswordGate({ children }: { children: (role: Role) => ReactNode
 
   return (
     <main className="gate">
+      <Aurora />
+      <WinterScene />
+      <div className="snow snow--far" aria-hidden="true" />
       <div className="snow" aria-hidden="true" />
       <form className="gate__box" onSubmit={handleSubmit}>
-        <div className="gate__icon" aria-hidden="true">🎄</div>
+        <SelbuStar className="gate__icon" />
         <h1>Julekalender 2026</h1>
         <label htmlFor="gate-password">Skriv kodeordet for at åbne kalenderen</label>
         <input

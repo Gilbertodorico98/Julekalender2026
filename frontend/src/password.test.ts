@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest'
-import { MASTER_HASH, PASSWORD_HASH, checkPassword, sha256Hex } from './password'
+import { MASTER_HASH, PASSWORD_HASH, checkPassword, sha256Hex, sha256HexFallback } from './password'
 
 // De rigtige kodeord må ikke stå i det offentlige repo, så testene bruger testkodeord.
 const TEST_FAMILY = 'nissehue'
@@ -38,6 +38,20 @@ describe('checkPassword', () => {
     expect(await sha256Hex('abc')).toBe(
       'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad',
     )
+  })
+
+  it('reserve-SHA-256 (til http://) giver samme resultat som crypto.subtle', async () => {
+    const enc = (s: string) => new TextEncoder().encode(s)
+    expect(sha256HexFallback(enc('abc'))).toBe(
+      'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad',
+    )
+    expect(sha256HexFallback(enc(''))).toBe(
+      'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+    )
+    // Flere blokke og æøå (UTF-8)
+    for (const s of ['nissehue', 'æøå Glædelig jul', 'x'.repeat(130)]) {
+      expect(sha256HexFallback(enc(s))).toBe(await sha256Hex(s))
+    }
   })
 
   it('har to gyldige og forskellige hashes', () => {

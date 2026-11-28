@@ -280,6 +280,22 @@ test.describe(GATE_SUITE, () => {
     await expect(page.getByRole('heading', { name: 'Adventsgaver' })).toBeVisible()
   })
 
+  test('login virker også på http:// (uden crypto.subtle)', async ({ page }) => {
+    test.skip(!PASSWORD, 'sæt CALENDAR_PASSWORD for at teste det rigtige kodeord')
+    // På http:// findes crypto.subtle ikke; så skal reserve-SHA-256 bruges.
+    await page.addInitScript(() => {
+      Object.defineProperty(globalThis.crypto, 'subtle', { value: undefined, configurable: true })
+    })
+    await page.goto('./')
+    const field = page.getByLabel('Skriv kodeordet for at åbne kalenderen')
+    await field.fill('forkert')
+    await field.press('Enter')
+    await expect(page.getByRole('alert')).toHaveText('Forkert kodeord. Prøv igen.')
+    await field.fill(PASSWORD!)
+    await field.press('Enter')
+    await expect(page.getByRole('heading', { name: 'Adventsgaver' })).toBeVisible()
+  })
+
   test('master-kodeord giver master-visning', async ({ page }) => {
     test.skip(!MASTER_PASSWORD, 'sæt CALENDAR_MASTER_PASSWORD for at teste master-kodeordet')
     await page.clock.install({ time: cph('2026-11-27T12:00:00') })
