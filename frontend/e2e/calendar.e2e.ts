@@ -87,8 +87,10 @@ test('før advent er alt låst, og låste låger kan ikke åbnes', async ({ page
   await expect(page.getByRole('status')).toHaveText('Tålmodighed! Låge 7 åbner d. 7. december.')
   await expect(door(page, /^Låge 7 er låst/)).not.toHaveClass(/door--open/)
 
-  await press(page, /^1\. søndag i advent er låst/)
-  await expect(page.getByRole('status')).toContainText('åbner d. 29. november')
+  // 2. advent viser kun "Tålmodighed" (ingen tyvstart-kode)
+  await press(page, /^2\. søndag i advent er låst/)
+  await expect(page.getByRole('status')).toContainText('åbner d. 6. december')
+  await expect(page.getByRole('dialog')).toHaveCount(0)
 })
 
 test('1. advent åbner ved midnat dansk tid, alt andet er låst', async ({ page }) => {
@@ -305,6 +307,64 @@ test.describe(GATE_SUITE, () => {
     await submit(page)
     await expect(page.getByRole('region', { name: 'Master-visning' })).toBeVisible()
     await expect(door(page, /er låst indtil/)).toHaveCount(0)
+  })
+})
+
+// Tyvstart-koden står heller ikke i repoet: CALENDAR_EARLY_CODE=... npm run e2e
+const EARLY_CODE = process.env.CALENDAR_EARLY_CODE
+
+test.describe('tyvstart af 1. advent', () => {
+  test('forkert kode afvises, rigtig kode åbner gaven i dag og huskes', async ({ page }) => {
+    test.skip(!EARLY_CODE, 'sæt CALENDAR_EARLY_CODE for at teste tyvstart-koden')
+    await page.clock.install({ time: cph('2026-11-28T15:00:00') })
+    await page.goto('./')
+
+    await press(page, /^1\. søndag i advent er låst/)
+    const dialog = page.getByRole('dialog')
+    await expect(dialog).toContainText('Kan du ikke vente?')
+    const field = page.getByLabel('Skriv den hemmelige kode for at tyvstarte')
+    await expect(field).toBeFocused()
+    await snap(page, 'tyvstart-kode')
+
+    await field.fill('forkert kode')
+    await pressButton(page, 'Åbn gaven')
+    await expect(dialog.getByRole('alert')).toHaveText('Forkert kode')
+    await expect(door(page, /^1\. søndag i advent er låst/)).toBeVisible()
+
+    // Med små bogstaver, som man ofte skriver på telefonen
+    await field.pressSequentially(EARLY_CODE!.toLowerCase())
+    await pressButton(page, 'Åbn gaven')
+
+    await expect(door(page, /^1\. søndag i advent: Tyvstart!/)).toBeVisible()
+    await expect(dialog).toContainText(
+      'Du har tyvstartet. Det kan få konsekvenser, men pakken ligger i vindueskarmen',
+    )
+    await snap(page, 'tyvstart-aabnet')
+    await pressButton(page, 'Luk')
+
+    // De andre gaver er stadig låst
+    await expect(door(page, /^2\. søndag i advent er låst/)).toBeVisible()
+
+    await page.reload()
+    await expect(door(page, /^1\. søndag i advent: Tyvstart!/)).toBeVisible()
+    await press(page, /^1\. søndag i advent: Tyvstart!/)
+    await expect(dialog).toContainText('Du har tyvstartet')
+  })
+
+  test('"Annullér" lukker kodevinduet uden at åbne gaven', async ({ page }) => {
+    await page.clock.install({ time: cph('2026-11-28T15:00:00') })
+    await page.goto('./')
+    await press(page, /^1\. søndag i advent er låst/)
+    await pressButton(page, 'Annullér')
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+    await expect(door(page, /^1\. søndag i advent er låst/)).toBeVisible()
+  })
+
+  test('uden tyvstart åbner 1. advent normalt søndag med vindueskarmen', async ({ page }) => {
+    await page.clock.install({ time: cph('2026-11-29T09:00:00') })
+    await page.goto('./')
+    await press(page, /^Åbn 1\. søndag i advent$/)
+    await expect(page.getByRole('dialog')).toContainText('Kig i vindueskarmen')
   })
 })
 

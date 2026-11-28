@@ -402,6 +402,34 @@
   touch-action: manipulation;
 }
 
+.dialog__label {
+  display: block;
+  margin-bottom: 12px;
+}
+
+.dialog__error {
+  min-height: 1.4em;
+  margin: 8px 0;
+  color: var(--red);
+  font-weight: 700;
+}
+
+.dialog__secondary {
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px;
+  border: 2px solid var(--red);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--red);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
 .dialog__close:focus-visible {
   outline: 3px solid var(--gold);
   outline-offset: 2px;

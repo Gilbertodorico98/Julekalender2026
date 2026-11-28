@@ -3,6 +3,8 @@ import './App.css'
 import { ADVENT_CONTENT, DOOR_CONTENT, DOOR_ORDER, type DoorContent } from './doors'
 import { Door } from './Door'
 import { DoorDialog } from './DoorDialog'
+import { CodeDialog } from './CodeDialog'
+import { EARLY_ADVENT, EARLY_STORAGE_KEY, useEarlyUnlock } from './early-access'
 import { Aurora, SelbuStar, WinterScene } from './Decorations'
 import {
   ADVENT_SUNDAYS,
@@ -67,13 +69,16 @@ export default function App({ master = false }: { master?: boolean }) {
   // Master-visningen gemmer sine åbnede låger for sig, så de rigtige låger ikke er åbnet i forvejen.
   const days = useOpenedDoors(master ? `${DAY_STORAGE_KEY}-master` : DAY_STORAGE_KEY)
   const advent = useOpenedDoors(master ? `${ADVENT_STORAGE_KEY}-master` : ADVENT_STORAGE_KEY)
+  const early = useEarlyUnlock(master ? `${EARLY_STORAGE_KEY}-master` : EARLY_STORAGE_KEY)
   const [message, setMessage] = useState<string | null>(null)
   const [shown, setShown] = useState<{ name: string; content: DoorContent } | null>(null)
+  const [codeFor, setCodeFor] = useState<string | null>(null)
   const showTimer = useRef<number | undefined>(undefined)
 
   useEffect(() => () => window.clearTimeout(showTimer.current), [])
 
   const closeDialog = useCallback(() => setShown(null), [])
+  const closeCode = useCallback(() => setCodeFor(null), [])
 
   /** Viser indholdet i popup'en; efter et nyt åbn venter vi på flip-animationen. */
   function show(name: string, content: DoorContent, afterFlip: boolean) {
@@ -113,6 +118,7 @@ export default function App({ master = false }: { master?: boolean }) {
               onClick={() => {
                 days.reset()
                 advent.reset()
+                early.reset()
                 setShown(null)
               }}
             >
@@ -163,10 +169,15 @@ export default function App({ master = false }: { master?: boolean }) {
           {ADVENT_SUNDAYS.map((sunday, i) => {
             const label = `${sunday.number}. søndag i advent`
             const opensOn = `${sunday.day}. ${MONTH_NAMES[sunday.month]}`
-            const isUnlocked = isDateReached(sunday.month, sunday.day, now)
+            const dateReached = isDateReached(sunday.month, sunday.day, now)
+            // Tyvstart: gaven kan åbnes før tid med den hemmelige kode (se early-access.ts).
+            const canTyvstart = sunday.number === EARLY_ADVENT.sunday
+            const tyvstartet = canTyvstart && early.unlocked
+            const isUnlocked = dateReached || tyvstartet
+            const content = tyvstartet ? EARLY_ADVENT.content : ADVENT_CONTENT[sunday.number]
             const following = ADVENT_SUNDAYS[i + 1] as (typeof ADVENT_SUNDAYS)[number] | undefined // næste søndag, hvis nogen (ikke .at(): kræver iOS 15.4)
             const isToday =
-              isUnlocked && !(following && isDateReached(following.month, following.day, now))
+              dateReached && !(following && isDateReached(following.month, following.day, now))
             return (
               <Door
                 key={sunday.number}
@@ -174,16 +185,23 @@ export default function App({ master = false }: { master?: boolean }) {
                 label={label}
                 name={label}
                 opensOn={opensOn}
-                content={ADVENT_CONTENT[sunday.number]}
+                content={content}
                 isUnlocked={isUnlocked}
                 isOpen={isUnlocked && advent.opened.has(sunday.number)}
                 isToday={isToday && unlocked < 24}
                 onOpen={() => {
                   advent.open(sunday.number)
-                  show(label, ADVENT_CONTENT[sunday.number], true)
+                  show(label, content, true)
                 }}
-                onShow={() => show(label, ADVENT_CONTENT[sunday.number], false)}
-                onLocked={() => setMessage(`Tålmodighed! Gaven til ${label} åbner d. ${opensOn}.`)}
+                onShow={() => show(label, content, false)}
+                onLocked={() => {
+                  if (canTyvstart) {
+                    setMessage(null)
+                    setCodeFor(label)
+                    return
+                  }
+                  setMessage(`Tålmodighed! Gaven til ${label} åbner d. ${opensOn}.`)
+                }}
               />
             )
           })}
@@ -216,6 +234,18 @@ export default function App({ master = false }: { master?: boolean }) {
       </section>
 
       {shown && <DoorDialog name={shown.name} content={shown.content} onClose={closeDialog} />}
+      {codeFor && (
+        <CodeDialog
+          name={codeFor}
+          onCancel={closeCode}
+          onSuccess={() => {
+            early.unlock()
+            advent.open(EARLY_ADVENT.sunday)
+            setCodeFor(null)
+            show(codeFor, EARLY_ADVENT.content, true)
+          }}
+        />
+      )}
     </main>
   )
 }

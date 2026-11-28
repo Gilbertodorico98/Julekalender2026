@@ -30,7 +30,7 @@ export const DOOR_CONTENT: Record<number, DoorContent> = {
 
 /** Adventsgaverne (fysiske gaver), nøglet efter søndag 1-4. Ret teksterne frit. */
 export const ADVENT_CONTENT: Record<number, DoorContent> = {
-  1: { emoji: '🎁', title: 'Gave til 1. advent', text: 'Der ligger en gave til dig! Kig under juletræet.' },
+  1: { emoji: '🎁', title: 'Gave til 1. advent', text: 'Der ligger en gave til dig! Kig i vindueskarmen.' },
   2: { emoji: '🎁', title: 'Gave til 2. advent', text: 'Der ligger en gave til dig! Kig i skabet i entréen.' },
   3: { emoji: '🎁', title: 'Gave til 3. advent', text: 'Der ligger en gave til dig! Kig under din hovedpude.' },
   4: { emoji: '🎁', title: 'Gave til 4. advent', text: 'Den sidste adventsgave! Kig bag sofaen.' },
