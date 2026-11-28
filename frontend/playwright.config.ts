@@ -9,7 +9,7 @@ export default defineConfig({
   fullyParallel: true,
   reporter: [['list']],
   use: {
-    baseURL: 'http://localhost:4173/Julekalender2026/',
+    baseURL: 'http://localhost:4173/',
     timezoneId: 'Europe/Copenhagen',
     locale: 'da-DK',
   },
@@ -23,7 +23,7 @@ export default defineConfig({
   ],
   webServer: {
     command: 'npm run build && npm run preview -- --port 4173 --strictPort',
-    url: 'http://localhost:4173/Julekalender2026/',
+    url: 'http://localhost:4173/',
     reuseExistingServer: false,
     timeout: 120_000,
   },

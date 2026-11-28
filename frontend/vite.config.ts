@@ -3,8 +3,9 @@ import { defineConfig } from 'vite'
 
 // https://vite.dev/config/
 export default defineConfig({
-  // GitHub Pages serverer appen fra https://<bruger>.github.io/Julekalender2026/
-  base: '/Julekalender2026/',
+  // Relative stier: virker både på https://<bruger>.github.io/Julekalender2026/
+  // og i roden af eget domæne (fridasjulekalender.dk) uden ny build.
+  base: './',
   plugins: [react()],
   build: {
     // Oversæt syntaks til ældre iPhones (iOS 14+) og browsere, ikke kun Vites standard (Safari 16+).
